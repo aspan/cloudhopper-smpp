@@ -21,7 +21,6 @@ package com.cloudhopper.smpp.impl;
  */
 
 import com.cloudhopper.commons.util.PeriodFormatterUtil;
-import com.cloudhopper.smpp.jmx.DefaultSmppSessionMXBean;
 import com.cloudhopper.commons.util.windowing.DuplicateKeyException;
 import com.cloudhopper.commons.util.windowing.OfferTimeoutException;
 import com.cloudhopper.commons.util.windowing.Window;
@@ -30,12 +29,10 @@ import com.cloudhopper.commons.util.windowing.WindowListener;
 import com.cloudhopper.smpp.SmppBindType;
 import com.cloudhopper.smpp.SmppConstants;
 import com.cloudhopper.smpp.SmppServerSession;
-import com.cloudhopper.smpp.type.SmppChannelException;
 import com.cloudhopper.smpp.SmppSessionConfiguration;
 import com.cloudhopper.smpp.SmppSessionCounters;
 import com.cloudhopper.smpp.SmppSessionHandler;
-import com.cloudhopper.smpp.SmppSessionListener;
-import com.cloudhopper.smpp.type.SmppTimeoutException;
+import com.cloudhopper.smpp.jmx.DefaultSmppSessionMXBean;
 import com.cloudhopper.smpp.pdu.BaseBind;
 import com.cloudhopper.smpp.pdu.BaseBindResp;
 import com.cloudhopper.smpp.pdu.EnquireLink;
@@ -53,6 +50,8 @@ import com.cloudhopper.smpp.transcoder.DefaultPduTranscoderContext;
 import com.cloudhopper.smpp.transcoder.PduTranscoder;
 import com.cloudhopper.smpp.type.RecoverablePduException;
 import com.cloudhopper.smpp.type.SmppBindException;
+import com.cloudhopper.smpp.type.SmppChannelException;
+import com.cloudhopper.smpp.type.SmppTimeoutException;
 import com.cloudhopper.smpp.type.UnrecoverablePduException;
 import com.cloudhopper.smpp.util.SequenceNumber;
 import com.cloudhopper.smpp.util.SmppSessionUtil;
@@ -67,7 +66,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.management.ObjectName;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -508,32 +506,7 @@ public class DefaultSmppSession implements SmppServerSession, SmppSessionChannel
             throw new SmppTimeoutException(e.getMessage(), e);
         }
         
-        if(this.sessionHandler instanceof SmppSessionListener) {
-            if(!((SmppSessionListener)this.sessionHandler).firePduDispatch(pdu)) {
-                logger.info("dispatched request PDU discarded: {}", pdu);
-                future.cancel(); //@todo probably throwing exception here is better solution?
-                return future;
-            }
-        }
-
-        // we need to log the PDU after encoding since some things only happen
-        // during the encoding process such as looking up the result message
-        if (configuration.getLoggingOptions().isLogPduEnabled()) {
-            if (synchronous) {
-                logger.info("sync send PDU: {}", pdu);
-            } else {
-                logger.info("async send PDU: {}", pdu);
-            }
-        }
-
-        // write the pdu out & wait timeout amount of time
-	ChannelFuture channelFuture = this.channel.write(buffer).await();
-
-        // check if the write was a success
-        if (!channelFuture.isSuccess()) {
-            // the write failed, make sure to throw an exception
-            throw new SmppChannelException(channelFuture.getCause().getMessage(), channelFuture.getCause());
-        }
+        this.channel.write(buffer);
         
         this.countSendRequestPdu(pdu);
 
@@ -544,8 +517,6 @@ public class DefaultSmppSession implements SmppServerSession, SmppSessionChannel
      * Asynchronously sends a PDU and does not wait for a response PDU.
      * This method will wait for the PDU to be written to the underlying channel.
      * @param pdu The PDU to send (can be either a response or request)
-     * @throws RecoverablePduEncodingException
-     * @throws UnrecoverablePduEncodingException
      * @throws SmppChannelException
      * @throws InterruptedException
      */
@@ -555,46 +526,16 @@ public class DefaultSmppSession implements SmppServerSession, SmppSessionChannel
         if (!pdu.hasSequenceNumberAssigned()) {
             pdu.setSequenceNumber(this.sequenceNumber.next());
         }
-        
-        if(this.sessionHandler instanceof SmppSessionListener) {
-            if(!((SmppSessionListener)this.sessionHandler).firePduDispatch(pdu)) {
-                logger.info("dispatched response PDU discarded: {}", pdu);
-                return;
-            }
-        }
 
         // encode the pdu into a buffer
         ChannelBuffer buffer = transcoder.encode(pdu);
 
-        // we need to log the PDU after encoding since some things only happen
-        // during the encoding process such as looking up the result message
-        if (configuration.getLoggingOptions().isLogPduEnabled()) {
-            logger.info("send PDU: {}", pdu);
+        this.channel.write(buffer);
         }
-
-        // write the pdu out & wait timeout amount of time
-        ChannelFuture channelFuture = this.channel.write(buffer).await();
-
-        // check if the write was a success
-        if (!channelFuture.isSuccess()) {
-            // the write failed, make sure to throw an exception
-            throw new SmppChannelException(channelFuture.getCause().getMessage(), channelFuture.getCause());
-        }
-    }
 
     @SuppressWarnings("unchecked")
     @Override
     public void firePduReceived(Pdu pdu) {
-        if (configuration.getLoggingOptions().isLogPduEnabled()) {
-            logger.info("received PDU: {}", pdu);
-        }
-
-        if(this.sessionHandler instanceof SmppSessionListener) {
-            if(!((SmppSessionListener)this.sessionHandler).firePduReceived(pdu)){
-                logger.info("recieved PDU discarded: {}", pdu);
-                return;
-            }
-        }
 
         if (pdu instanceof PduRequest) {
             // process this request and allow the handler to return a result
@@ -625,28 +566,22 @@ public class DefaultSmppSession implements SmppServerSession, SmppSessionChannel
                 // see if a correlating request exists in the window
                 WindowFuture<Integer,PduRequest,PduResponse> future = this.sendWindow.complete(receivedPduSeqNum, responsePdu);
                 if (future != null) {
-                    logger.trace("Found a future in the window for seqNum [{}]", receivedPduSeqNum);
-                    this.countReceiveResponsePdu(responsePdu, future.getOfferToAcceptTime(), future.getAcceptToDoneTime(), (future.getAcceptToDoneTime() / future.getWindowSize()));
                     
                     // if this isn't null, we found a match to a request
                     int callerStateHint = future.getCallerStateHint();
                     //logger.trace("IsCallerWaiting? " + future.isCallerWaiting() + " callerStateHint=" + callerStateHint);
                     if (callerStateHint == WindowFuture.CALLER_WAITING) {
-                        logger.trace("Caller waiting for request: {}", future.getRequest()); 
                         // if a caller is waiting, nothing extra needs done as calling thread will handle the response
                         return;
                     } else if (callerStateHint == WindowFuture.CALLER_NOT_WAITING) {
-                        logger.trace("Caller not waiting for request: {}", future.getRequest()); 
                         // this was an "expected" response - wrap it into an async response
                         this.sessionHandler.fireExpectedPduResponseReceived(new DefaultPduAsyncResponse(future));
                         return;
                     } else {
-                        logger.trace("Caller timed out waiting for request: {}", future.getRequest());
                         // we send the request, but caller gave up on it awhile ago
                         this.sessionHandler.fireUnexpectedPduResponseReceived(responsePdu);
                     }
                 } else {
-                    this.countReceiveResponsePdu(responsePdu, 0, 0, 0);
                     
                     // original request either expired OR was completely unexpected
                     this.sessionHandler.fireUnexpectedPduResponseReceived(responsePdu);
@@ -688,13 +623,11 @@ public class DefaultSmppSession implements SmppServerSession, SmppSessionChannel
         // to a request and we know the channel closed, we should check for those
         // specific requests and make sure to cancel them
         if (this.sendWindow.getSize() > 0) {
-            logger.trace("Channel closed and sendWindow has [{}] outstanding requests, some may need cancelled immediately", this.sendWindow.getSize());
             Map<Integer,WindowFuture<Integer,PduRequest,PduResponse>> requests = this.sendWindow.createSortedSnapshot();
             Throwable cause = new ClosedChannelException();
             for (WindowFuture<Integer,PduRequest,PduResponse> future : requests.values()) {
                 // is the caller waiting?
                 if (future.isCallerWaiting()) {
-                    logger.debug("Caller waiting on request [{}], cancelling it with a channel closed exception", future.getKey());
                     try {
                         future.fail(cause);
                     } catch (Exception e) { }
@@ -822,44 +755,6 @@ public class DefaultSmppSession implements SmppServerSession, SmppSessionChannel
         }
     }
     
-    private void countReceiveResponsePdu(PduResponse pdu, long waitTime, long responseTime, long estimatedProcessingTime) {
-        if (this.counters == null) {
-            return;     // noop
-        }
-        
-        if (pdu.isResponse()) {
-            switch (pdu.getCommandId()) {
-                case SmppConstants.CMD_ID_SUBMIT_SM_RESP:
-                    this.counters.getTxSubmitSM().incrementResponseAndGet();
-                    this.counters.getTxSubmitSM().addRequestWaitTimeAndGet(waitTime);
-                    this.counters.getTxSubmitSM().addRequestResponseTimeAndGet(responseTime);
-                    this.counters.getTxSubmitSM().addRequestEstimatedProcessingTimeAndGet(estimatedProcessingTime);
-                    this.counters.getTxSubmitSM().getResponseCommandStatusCounter().incrementAndGet(pdu.getCommandStatus());
-                    break;
-                case SmppConstants.CMD_ID_DELIVER_SM_RESP:
-                    this.counters.getTxDeliverSM().incrementResponseAndGet();
-                    this.counters.getTxDeliverSM().addRequestWaitTimeAndGet(waitTime);
-                    this.counters.getTxDeliverSM().addRequestResponseTimeAndGet(responseTime);
-                    this.counters.getTxDeliverSM().addRequestEstimatedProcessingTimeAndGet(estimatedProcessingTime);
-                    this.counters.getTxDeliverSM().getResponseCommandStatusCounter().incrementAndGet(pdu.getCommandStatus());
-                    break;
-                case SmppConstants.CMD_ID_DATA_SM_RESP:
-                    this.counters.getTxDataSM().incrementResponseAndGet();
-                    this.counters.getTxDataSM().addRequestWaitTimeAndGet(waitTime);
-                    this.counters.getTxDataSM().addRequestResponseTimeAndGet(responseTime);
-                    this.counters.getTxDataSM().addRequestEstimatedProcessingTimeAndGet(estimatedProcessingTime);
-                    this.counters.getTxDataSM().getResponseCommandStatusCounter().incrementAndGet(pdu.getCommandStatus());
-                    break;
-                case SmppConstants.CMD_ID_ENQUIRE_LINK_RESP:
-                    this.counters.getTxEnquireLink().incrementResponseAndGet();
-                    this.counters.getTxEnquireLink().addRequestWaitTimeAndGet(waitTime);
-                    this.counters.getTxEnquireLink().addRequestResponseTimeAndGet(responseTime);
-                    this.counters.getTxEnquireLink().addRequestEstimatedProcessingTimeAndGet(estimatedProcessingTime);
-                    this.counters.getTxEnquireLink().getResponseCommandStatusCounter().incrementAndGet(pdu.getCommandStatus());
-                    break;
-            }
-        }
-    }
     
     // mainly for JMX management
 

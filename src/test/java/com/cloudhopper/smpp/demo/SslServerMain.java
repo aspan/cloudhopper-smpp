@@ -29,7 +29,6 @@ import com.cloudhopper.smpp.impl.DefaultSmppServer;
 import com.cloudhopper.smpp.impl.DefaultSmppSessionHandler;
 import com.cloudhopper.smpp.pdu.BaseBind;
 import com.cloudhopper.smpp.pdu.BaseBindResp;
-import com.cloudhopper.smpp.pdu.BaseSm;
 import com.cloudhopper.smpp.pdu.PduRequest;
 import com.cloudhopper.smpp.pdu.PduResponse;
 import com.cloudhopper.smpp.ssl.SslConfiguration;
@@ -38,7 +37,6 @@ import java.lang.ref.WeakReference;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,13 +52,6 @@ public class SslServerMain {
         //
         // setup 3 things required for a server
         //
-        
-        // for monitoring thread use, it's preferable to create your own instance
-        // of an executor and cast it to a ThreadPoolExecutor from Executors.newCachedThreadPool()
-        // this permits exposing things like executor.getActiveCount() via JMX possible
-        // no point renaming the threads in a factory since underlying Netty 
-        // framework does not easily allow you to customize your thread names
-        ThreadPoolExecutor executor = (ThreadPoolExecutor)Executors.newCachedThreadPool();
         
         // to enable automatic expiration of requests, a second scheduled executor
         // is required which is what a monitor task will be executed with - this
@@ -97,7 +88,7 @@ public class SslServerMain {
 	configuration.setSslConfiguration(sslConfig);
 
         // create a server, start it up
-        DefaultSmppServer smppServer = new DefaultSmppServer(configuration, new DefaultSmppServerHandler(), executor, monitorExecutor);
+        DefaultSmppServer smppServer = new DefaultSmppServer(configuration, new DefaultSmppServerHandler(), monitorExecutor);
 
         logger.info("Starting SMPP server...");
         smppServer.start();

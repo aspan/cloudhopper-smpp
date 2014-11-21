@@ -28,8 +28,6 @@ import com.cloudhopper.smpp.SmppSession;
 import com.cloudhopper.smpp.SmppSessionConfiguration;
 import com.cloudhopper.smpp.channel.SmppChannelConstants;
 import com.cloudhopper.smpp.channel.SmppServerConnector;
-import com.cloudhopper.smpp.channel.SmppSessionLogger;
-import com.cloudhopper.smpp.channel.SmppSessionThreadRenamer;
 import com.cloudhopper.smpp.channel.SmppSessionWrapper;
 import com.cloudhopper.smpp.jmx.DefaultSmppServerMXBean;
 import com.cloudhopper.smpp.pdu.BaseBind;
@@ -40,11 +38,10 @@ import com.cloudhopper.smpp.transcoder.DefaultPduTranscoderContext;
 import com.cloudhopper.smpp.transcoder.PduTranscoder;
 import com.cloudhopper.smpp.type.SmppChannelException;
 import com.cloudhopper.smpp.type.SmppProcessingException;
-import com.cloudhopper.smpp.util.DaemonExecutors;
+import com.cloudhopper.smpp.util.DefaultThreadFactory;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.util.Timer;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -57,8 +54,8 @@ import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.channel.socket.oio.OioServerSocketChannelFactory;
-import org.jboss.netty.handler.timeout.WriteTimeoutHandler;
+import org.jboss.netty.handler.execution.ExecutionHandler;
+import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,18 +66,24 @@ import org.slf4j.LoggerFactory;
  */
 public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
     private static final Logger logger = LoggerFactory.getLogger(DefaultSmppServer.class);
+    private static final OrderedMemoryAwareThreadPoolExecutor UPSTREAM_EXECUTOR = new OrderedMemoryAwareThreadPoolExecutor(
+            32,
+            0,
+            0,
+            30,
+            TimeUnit.MINUTES,
+            new DefaultThreadFactory("ch-server-upstream-executor")
+    );
+
 
     private final ChannelGroup channels;
     private final SmppServerConnector serverConnector;
     private final SmppServerConfiguration configuration;
     private final SmppServerHandler serverHandler;
     private final PduTranscoder transcoder;
-    private ExecutorService bossThreadPool;
     private ChannelFactory channelFactory;
     private ServerBootstrap serverBootstrap;
     private Channel serverChannel; 
-    // shared instance of a timer for session writeTimeout timing
-    private final org.jboss.netty.util.Timer writeTimeoutTimer;
     // shared instance of a timer background thread to close unbound channels
     private final Timer bindTimer;
    // shared instance of a session id generator (an atomic long)
@@ -92,28 +95,12 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
     /**
      * Creates a new default SmppServer. Window monitoring and automatic
      * expiration of requests will be disabled with no monitorExecutors.
-     * A "cachedDaemonThreadPool" will be used for IO worker threads.
      * @param configuration The server configuration to create this server with
      * @param serverHandler The handler implementation for handling bind requests
      *      and creating/destroying sessions.
      */
     public DefaultSmppServer(SmppServerConfiguration configuration, SmppServerHandler serverHandler) {
-        this(configuration, serverHandler, DaemonExecutors.newCachedDaemonThreadPool());
-    }
-    
-    /**
-     * Creates a new default SmppServer. Window monitoring and automatic
-     * expiration of requests will be disabled with no monitorExecutors.
-     * @param configuration The server configuration to create this server with
-     * @param serverHandler The handler implementation for handling bind requests
-     *      and creating/destroying sessions.
-     * @param executor The executor that IO workers will be executed with. An
-     *      Executors.newCachedDaemonThreadPool() is recommended. The max threads
-     *      will never grow more than configuration.getMaxConnections() if NIO
-     *      sockets are used.
-     */
-    public DefaultSmppServer(final SmppServerConfiguration configuration, SmppServerHandler serverHandler, ExecutorService executor) {
-        this(configuration, serverHandler, DaemonExecutors.newCachedDaemonThreadPool(), null);
+        this(configuration, serverHandler, null);
     }
 
     /**
@@ -121,28 +108,21 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
      * @param configuration The server configuration to create this server with
      * @param serverHandler The handler implementation for handling bind requests
      *      and creating/destroying sessions.
-     * @param executor The executor that IO workers will be executed with. An
-     *      Executors.newCachedDaemonThreadPool() is recommended. The max threads
-     *      will never grow more than configuration.getMaxConnections() if NIO
-     *      sockets are used.
      * @param monitorExecutor The scheduled executor that all sessions will share
      *      to monitor themselves and expire requests. If null monitoring will
      *      be disabled.
      */
-    public DefaultSmppServer(final SmppServerConfiguration configuration, SmppServerHandler serverHandler, ExecutorService executor, ScheduledExecutorService monitorExecutor) {
+    public DefaultSmppServer(final SmppServerConfiguration configuration, SmppServerHandler serverHandler, ScheduledExecutorService monitorExecutor) {
         this.configuration = configuration;
         // the same group we'll put every server channel
         this.channels = new DefaultChannelGroup();
         this.serverHandler = serverHandler;
-        // we'll put the "boss" worker for a server in its own pool
-        this.bossThreadPool = Executors.newCachedThreadPool();
         
-        // a factory for creating channels (connections)
-        if (configuration.isNonBlockingSocketsEnabled()) {
-            this.channelFactory = new NioServerSocketChannelFactory(this.bossThreadPool, executor, configuration.getMaxConnectionSize());
-        } else {
-            this.channelFactory = new OioServerSocketChannelFactory(this.bossThreadPool, executor);
-        }
+        this.channelFactory = new NioServerSocketChannelFactory(
+                Executors.newCachedThreadPool(new DefaultThreadFactory("netty-io-server-boss-pool")),
+                Executors.newCachedThreadPool(new DefaultThreadFactory("netty-io-server-worker-pool")),
+                configuration.getMaxConnectionSize()
+        );
         
         // tie the server bootstrap to this server socket channel factory
         this.serverBootstrap = new ServerBootstrap(this.channelFactory);
@@ -150,11 +130,20 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
         // set options for the server socket that are useful
         this.serverBootstrap.setOption("reuseAddress", configuration.isReuseAddress());
         
+        this.serverBootstrap.setOption("sendBufferSize", 16777216);
+        this.serverBootstrap.setOption("receiveBufferSize", 16777216);
+
+        this.serverBootstrap.setOption("writeBufferLowWaterMark", 20000 * 256);
+        this.serverBootstrap.setOption("writeBufferHighWaterMark", 30000 * 256);
+
+        this.serverBootstrap.setOption("tcpNoDelay", true);
+
         // we use the same default pipeline for all new channels - no need for a factory
         this.serverConnector = new SmppServerConnector(channels, this);
+
+        this.serverBootstrap.getPipeline().addLast("ch-server-upstream-executor-handler", new ExecutionHandler(UPSTREAM_EXECUTOR));
+
         this.serverBootstrap.getPipeline().addLast(SmppChannelConstants.PIPELINE_SERVER_CONNECTOR_NAME, this.serverConnector);
-	// a shared instance of a timer for session writeTimeout timing
-	this.writeTimeoutTimer = new org.jboss.netty.util.HashedWheelTimer();
         // a shared timer used to make sure new channels are bound within X milliseconds
         this.bindTimer = new Timer(configuration.getName() + "-BindTimer0", true);
         // NOTE: this would permit us to customize the "transcoding" context for a server if needed
@@ -270,7 +259,6 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
         stop();
         this.serverBootstrap.releaseExternalResources();
         this.serverBootstrap = null;
-	this.writeTimeoutTimer.stop();
         unregisterMBean();
         logger.info("{} destroyed on SMPP port [{}]", configuration.getName(), configuration.getPort());
     }
@@ -332,19 +320,6 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
         // create a new server session associated with this server
         DefaultSmppSession session = new DefaultSmppSession(SmppSession.Type.SERVER, config, channel, this, sessionId, preparedBindResponse, interfaceVersion, monitorExecutor);
 
-        // replace name of thread used for renaming
-        SmppSessionThreadRenamer threadRenamer = (SmppSessionThreadRenamer)channel.getPipeline().get(SmppChannelConstants.PIPELINE_SESSION_THREAD_RENAMER_NAME);
-        threadRenamer.setThreadName(config.getName());
-
-        // add a logging handler after the thread renamer
-        SmppSessionLogger loggingHandler = new SmppSessionLogger(DefaultSmppSession.class.getCanonicalName(), config.getLoggingOptions());
-        channel.getPipeline().addAfter(SmppChannelConstants.PIPELINE_SESSION_THREAD_RENAMER_NAME, SmppChannelConstants.PIPELINE_SESSION_LOGGER_NAME, loggingHandler);
-
-	// add a writeTimeout handler after the logger
-	if (config.getWriteTimeout() > 0) {
-	    WriteTimeoutHandler writeTimeoutHandler = new WriteTimeoutHandler(writeTimeoutTimer, config.getWriteTimeout(), TimeUnit.MILLISECONDS);
-	    channel.getPipeline().addAfter(SmppChannelConstants.PIPELINE_SESSION_LOGGER_NAME, SmppChannelConstants.PIPELINE_SESSION_WRITE_TIMEOUT_NAME, writeTimeoutHandler);
-	}
 
         // decoder in pipeline is ok (keep it)
 
