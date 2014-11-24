@@ -461,7 +461,7 @@ public class DefaultSmppServerTest {
             try {
                 BaseBindResp bindResponse = session0.bind(bindRequest, 200);
                 Assert.fail();
-            } catch (SmppChannelException e) {
+            } catch (SmppTimeoutException e) {
                 // correct behavior
             }
 

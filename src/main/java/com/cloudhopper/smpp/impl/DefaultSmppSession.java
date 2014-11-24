@@ -21,26 +21,43 @@ package com.cloudhopper.smpp.impl;
  */
 
 import com.cloudhopper.commons.util.PeriodFormatterUtil;
-import com.cloudhopper.commons.util.windowing.*;
-import com.cloudhopper.smpp.*;
+import com.cloudhopper.commons.util.windowing.DuplicateKeyException;
+import com.cloudhopper.commons.util.windowing.OfferTimeoutException;
+import com.cloudhopper.commons.util.windowing.Window;
+import com.cloudhopper.commons.util.windowing.WindowFuture;
+import com.cloudhopper.commons.util.windowing.WindowListener;
+import com.cloudhopper.smpp.SmppBindType;
+import com.cloudhopper.smpp.SmppConstants;
+import com.cloudhopper.smpp.SmppServerSession;
+import com.cloudhopper.smpp.SmppSessionConfiguration;
+import com.cloudhopper.smpp.SmppSessionCounters;
+import com.cloudhopper.smpp.SmppSessionHandler;
 import com.cloudhopper.smpp.jmx.DefaultSmppSessionMXBean;
-import com.cloudhopper.smpp.pdu.*;
+import com.cloudhopper.smpp.pdu.BaseBind;
+import com.cloudhopper.smpp.pdu.BaseBindResp;
+import com.cloudhopper.smpp.pdu.EnquireLink;
+import com.cloudhopper.smpp.pdu.EnquireLinkResp;
+import com.cloudhopper.smpp.pdu.Pdu;
+import com.cloudhopper.smpp.pdu.PduRequest;
+import com.cloudhopper.smpp.pdu.PduResponse;
+import com.cloudhopper.smpp.pdu.SubmitSm;
+import com.cloudhopper.smpp.pdu.SubmitSmResp;
+import com.cloudhopper.smpp.pdu.Unbind;
 import com.cloudhopper.smpp.tlv.Tlv;
 import com.cloudhopper.smpp.tlv.TlvConvertException;
 import com.cloudhopper.smpp.transcoder.DefaultPduTranscoder;
 import com.cloudhopper.smpp.transcoder.DefaultPduTranscoderContext;
 import com.cloudhopper.smpp.transcoder.PduTranscoder;
-import com.cloudhopper.smpp.type.*;
+import com.cloudhopper.smpp.type.RecoverablePduException;
+import com.cloudhopper.smpp.type.SmppBindException;
+import com.cloudhopper.smpp.type.SmppChannelException;
+import com.cloudhopper.smpp.type.SmppTimeoutException;
+import com.cloudhopper.smpp.type.UnrecoverablePduException;
 import com.cloudhopper.smpp.util.SequenceNumber;
 import com.cloudhopper.smpp.util.SmppSessionUtil;
 import com.cloudhopper.smpp.util.SmppUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -48,6 +65,9 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.management.ObjectName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of either an ESME or SMSC SMPP session.
@@ -489,7 +509,7 @@ public class DefaultSmppSession implements SmppServerSession, SmppSessionChannel
             throw new SmppTimeoutException(e.getMessage(), e);
         }
         
-        this.channel.write(buffer);
+        this.channel.writeAndFlush(buffer);
         
         this.countSendRequestPdu(pdu);
 
@@ -515,7 +535,7 @@ public class DefaultSmppSession implements SmppServerSession, SmppSessionChannel
         // encode the pdu into a buffer
         ByteBuf buffer = transcoder.encode(pdu);
 
-        this.channel.write(buffer);
+        this.channel.writeAndFlush(buffer);
         }
 
     @SuppressWarnings("unchecked")
