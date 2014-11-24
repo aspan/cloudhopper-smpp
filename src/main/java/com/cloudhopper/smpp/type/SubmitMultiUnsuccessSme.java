@@ -21,9 +21,9 @@ package com.cloudhopper.smpp.type;
  */
 
 import com.cloudhopper.commons.util.StringUtil;
-import com.cloudhopper.smpp.util.ChannelBufferUtil;
+import com.cloudhopper.smpp.util.ByteBufUtil;
 import com.cloudhopper.smpp.util.PduUtil;
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 public class SubmitMultiUnsuccessSme {
 
@@ -54,8 +54,8 @@ public class SubmitMultiUnsuccessSme {
         this.errorStatusCode = errorStatusCode;
     }
 
-    public void readBody(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
-        address = ChannelBufferUtil.readAddress(buffer);
+    public void readBody(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
+        address = ByteBufUtil.readAddress(buffer);
         errorStatusCode = buffer.readInt();
     }
 
@@ -63,8 +63,8 @@ public class SubmitMultiUnsuccessSme {
         return PduUtil.calculateByteSizeOfAddress(address) + 4; //errorStatusCode
     }
 
-    public void writeBody(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
-        ChannelBufferUtil.writeAddress(buffer, address);
+    public void writeBody(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
+        ByteBufUtil.writeAddress(buffer, address);
         buffer.writeInt(errorStatusCode);
     }
 

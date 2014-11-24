@@ -21,14 +21,14 @@ package com.cloudhopper.smpp.pdu;
  */
 
 import com.cloudhopper.commons.util.HexUtil;
-import com.cloudhopper.smpp.type.Address;
-import com.cloudhopper.smpp.type.UnrecoverablePduException;
-import com.cloudhopper.smpp.type.RecoverablePduException;
 import com.cloudhopper.commons.util.StringUtil;
+import com.cloudhopper.smpp.type.Address;
+import com.cloudhopper.smpp.type.RecoverablePduException;
 import com.cloudhopper.smpp.type.SmppInvalidArgumentException;
-import com.cloudhopper.smpp.util.ChannelBufferUtil;
+import com.cloudhopper.smpp.type.UnrecoverablePduException;
+import com.cloudhopper.smpp.util.ByteBufUtil;
 import com.cloudhopper.smpp.util.PduUtil;
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 /**
  * Base "short message" PDU as a super class for submit_sm, deliver_sm, and
@@ -170,15 +170,15 @@ public abstract class BaseSm<R extends PduResponse> extends PduRequest<R> {
     }
 
     @Override
-    public void readBody(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
-        this.serviceType = ChannelBufferUtil.readNullTerminatedString(buffer);
-        this.sourceAddress = ChannelBufferUtil.readAddress(buffer);
+    public void readBody(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
+        this.serviceType = ByteBufUtil.readNullTerminatedString(buffer);
+        this.sourceAddress = ByteBufUtil.readAddress(buffer);
         readDestinationAddress(buffer);
         this.esmClass = buffer.readByte();
         this.protocolId = buffer.readByte();
         this.priority = buffer.readByte();
-        this.scheduleDeliveryTime = ChannelBufferUtil.readNullTerminatedString(buffer);
-        this.validityPeriod = ChannelBufferUtil.readNullTerminatedString(buffer);
+        this.scheduleDeliveryTime = ByteBufUtil.readNullTerminatedString(buffer);
+        this.validityPeriod = ByteBufUtil.readNullTerminatedString(buffer);
         this.registeredDelivery = buffer.readByte();
         this.replaceIfPresent = buffer.readByte();
         this.dataCoding = buffer.readByte();
@@ -204,15 +204,15 @@ public abstract class BaseSm<R extends PduResponse> extends PduRequest<R> {
     }
 
     @Override
-    public void writeBody(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
-        ChannelBufferUtil.writeNullTerminatedString(buffer, this.serviceType);
-        ChannelBufferUtil.writeAddress(buffer, this.sourceAddress);
+    public void writeBody(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
+        ByteBufUtil.writeNullTerminatedString(buffer, this.serviceType);
+        ByteBufUtil.writeAddress(buffer, this.sourceAddress);
         writeDestinationAddress(buffer);
         buffer.writeByte(this.esmClass);
         buffer.writeByte(this.protocolId);
         buffer.writeByte(this.priority);
-        ChannelBufferUtil.writeNullTerminatedString(buffer, this.scheduleDeliveryTime);
-        ChannelBufferUtil.writeNullTerminatedString(buffer, this.validityPeriod);
+        ByteBufUtil.writeNullTerminatedString(buffer, this.scheduleDeliveryTime);
+        ByteBufUtil.writeNullTerminatedString(buffer, this.validityPeriod);
         buffer.writeByte(this.registeredDelivery);
         buffer.writeByte(this.replaceIfPresent);
         buffer.writeByte(this.dataCoding);
@@ -243,12 +243,12 @@ public abstract class BaseSm<R extends PduResponse> extends PduRequest<R> {
         buffer.append("])");
     }
 
-    protected void readDestinationAddress(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
-        this.destAddress = ChannelBufferUtil.readAddress(buffer);
+    protected void readDestinationAddress(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
+        this.destAddress = ByteBufUtil.readAddress(buffer);
     }
 
-    protected void writeDestinationAddress(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
-        ChannelBufferUtil.writeAddress(buffer, this.destAddress);
+    protected void writeDestinationAddress(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
+        ByteBufUtil.writeAddress(buffer, this.destAddress);
     }
 
     protected int calculateDestinationAddressSize() {

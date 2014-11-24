@@ -21,13 +21,19 @@ package com.cloudhopper.smpp.util;
  */
 
 import com.cloudhopper.smpp.SmppConstants;
-import com.cloudhopper.smpp.type.*;
 import com.cloudhopper.smpp.tlv.Tlv;
+import com.cloudhopper.smpp.type.Address;
+import com.cloudhopper.smpp.type.NotEnoughDataInBufferException;
+import com.cloudhopper.smpp.type.RecoverablePduException;
+import com.cloudhopper.smpp.type.SmppInvalidArgumentException;
+import com.cloudhopper.smpp.type.SubmitMultiDestinationAddress;
+import com.cloudhopper.smpp.type.SubmitMultiUnsuccessSme;
+import com.cloudhopper.smpp.type.TerminatingNullByteNotFoundException;
+import com.cloudhopper.smpp.type.UnrecoverablePduException;
+import io.netty.buffer.ByteBuf;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,18 +41,18 @@ import org.slf4j.LoggerFactory;
  *
  * @author joelauer (twitter: @jjlauer or <a href="http://twitter.com/jjlauer" target=window>http://twitter.com/jjlauer</a>)
  */
-public class ChannelBufferUtil {
-    private static final Logger logger = LoggerFactory.getLogger(ChannelBufferUtil.class);
+public class ByteBufUtil {
+    private static final Logger logger = LoggerFactory.getLogger(ByteBufUtil.class);
 
     /**
      * Read and create a new Address from a buffer.  Checks if there is
      * a minimum number of bytes readable from the buffer.
      * @param buffer
      * @return
-     * @throws UnrecoverablePduEncodingException
-     * @throws RecoverablePduEncodingException
+     * @throws UnrecoverablePduException
+     * @throws RecoverablePduException
      */
-    static public Address readAddress(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
+    static public Address readAddress(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
         // an address is at least 3 bytes long (ton, npi, and null byte)
         if (buffer.readableBytes() < 3) {
             throw new NotEnoughDataInBufferException("Parsing address", buffer.readableBytes(), 3);
@@ -61,10 +67,10 @@ public class ChannelBufferUtil {
      * safely write out the SmppConstants.EMPTY_ADDRESS instance.
      * @param buffer
      * @param value
-     * @throws UnrecoverablePduEncodingException
-     * @throws RecoverablePduEncodingException
+     * @throws UnrecoverablePduException
+     * @throws RecoverablePduException
      */
-    static public void writeAddress(ChannelBuffer buffer, Address value) throws UnrecoverablePduException, RecoverablePduException {
+    static public void writeAddress(ByteBuf buffer, Address value) throws UnrecoverablePduException, RecoverablePduException {
         if (value == null) {
             SmppConstants.EMPTY_ADDRESS.write(buffer);
         } else {
@@ -78,7 +84,7 @@ public class ChannelBufferUtil {
      * @param buffer the buffer to read from
      * @return submit_multi address list
      */
-    public static List<SubmitMultiDestinationAddress> readSubmitMultiAddressList(ChannelBuffer buffer)
+    public static List<SubmitMultiDestinationAddress> readSubmitMultiAddressList(ByteBuf buffer)
             throws UnrecoverablePduException, RecoverablePduException {
         /* submit_multi has to have at least 3 bytes:
          * 1 byte for number_of_dests field
@@ -111,7 +117,7 @@ public class ChannelBufferUtil {
      * @param buffer      the buffer to write to
      * @param addressList submit_multi address list
      */
-    public static void writeSubmitMultiAddressList(ChannelBuffer buffer, List<SubmitMultiDestinationAddress> addressList)
+    public static void writeSubmitMultiAddressList(ByteBuf buffer, List<SubmitMultiDestinationAddress> addressList)
             throws UnrecoverablePduException, RecoverablePduException {
 
         if (addressList == null || addressList.isEmpty()) {
@@ -128,7 +134,7 @@ public class ChannelBufferUtil {
         }
     }
 
-    public static void writeSubmitMultiUnsuccessSmeList(ChannelBuffer buffer, List<SubmitMultiUnsuccessSme> list)
+    public static void writeSubmitMultiUnsuccessSmeList(ByteBuf buffer, List<SubmitMultiUnsuccessSme> list)
             throws UnrecoverablePduException, RecoverablePduException {
 
         int numberOfUnsuccessSmes = list == null || list.isEmpty() ? 0 : list.size();
@@ -140,7 +146,7 @@ public class ChannelBufferUtil {
         }
     }
 
-    public static List<SubmitMultiUnsuccessSme> readSubmitMultiUnsuccessSmeList(ChannelBuffer buffer)
+    public static List<SubmitMultiUnsuccessSme> readSubmitMultiUnsuccessSmeList(ByteBuf buffer)
             throws UnrecoverablePduException, RecoverablePduException {
 
         List<SubmitMultiUnsuccessSme> list = null;
@@ -167,7 +173,7 @@ public class ChannelBufferUtil {
      * @return A new TLV instance
      * @throws NotEnoughDataInBufferException
      */
-    static public Tlv readTlv(ChannelBuffer buffer) throws NotEnoughDataInBufferException {
+    static public Tlv readTlv(ByteBuf buffer) throws NotEnoughDataInBufferException {
         // a TLV is at least 4 bytes (tag+length)
         if (buffer.readableBytes() < 4) {
             throw new NotEnoughDataInBufferException("Parsing TLV tag and length", buffer.readableBytes(), 4);
@@ -187,7 +193,7 @@ public class ChannelBufferUtil {
         return new Tlv(tag, value);
     }
     
-    static public void writeTlv(ChannelBuffer buffer, Tlv tlv) throws NotEnoughDataInBufferException {
+    static public void writeTlv(ByteBuf buffer, Tlv tlv) throws NotEnoughDataInBufferException {
         // a null is a noop
         if (tlv == null) {
             return;
@@ -206,7 +212,7 @@ public class ChannelBufferUtil {
      * @param value
      * @throws UnsupportedEncodingException
      */
-    static public void writeNullTerminatedString(ChannelBuffer buffer, String value) throws UnrecoverablePduException {
+    static public void writeNullTerminatedString(ByteBuf buffer, String value) throws UnrecoverablePduException {
         if (value != null) {
             try {
                 byte[] bytes = value.getBytes("ISO-8859-1");
@@ -229,7 +235,7 @@ public class ChannelBufferUtil {
      * @return
      * @throws TerminatingNullByteNotFoundException
      */
-    static public String readNullTerminatedString(ChannelBuffer buffer) throws TerminatingNullByteNotFoundException {
+    static public String readNullTerminatedString(ByteBuf buffer) throws TerminatingNullByteNotFoundException {
         // maximum possible length are the readable bytes in buffer
         int maxLength = buffer.readableBytes();
 

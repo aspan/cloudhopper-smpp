@@ -20,17 +20,18 @@ package com.cloudhopper.smpp.transcoder;
  * #L%
  */
 
-import com.cloudhopper.smpp.pdu.*;
-import com.cloudhopper.smpp.type.UnrecoverablePduException;
-import com.cloudhopper.smpp.type.UnknownCommandIdException;
-import com.cloudhopper.smpp.type.RecoverablePduException;
 import com.cloudhopper.commons.util.HexUtil;
 import com.cloudhopper.smpp.SmppConstants;
+import com.cloudhopper.smpp.pdu.*;
 import com.cloudhopper.smpp.type.NotEnoughDataInBufferException;
+import com.cloudhopper.smpp.type.RecoverablePduException;
+import com.cloudhopper.smpp.type.UnknownCommandIdException;
+import com.cloudhopper.smpp.type.UnrecoverablePduException;
 import com.cloudhopper.smpp.util.PduUtil;
 import com.cloudhopper.smpp.util.SequenceNumber;
-import org.jboss.netty.buffer.BigEndianHeapChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import java.nio.ByteOrder;
 
 /**
  * 
@@ -45,7 +46,7 @@ public class DefaultPduTranscoder implements PduTranscoder {
     }
 
     @Override
-    public ChannelBuffer encode(Pdu pdu) throws UnrecoverablePduException, RecoverablePduException {
+    public ByteBuf encode(Pdu pdu) throws UnrecoverablePduException, RecoverablePduException {
         // see if we can map the command status into a message
         if (pdu instanceof PduResponse) {
             PduResponse response = (PduResponse)pdu;
@@ -62,8 +63,9 @@ public class DefaultPduTranscoder implements PduTranscoder {
         }
 
         // create the buffer and add the header
-        ChannelBuffer buffer = new BigEndianHeapChannelBuffer(pdu.getCommandLength());
-
+        ByteBuf buffer = Unpooled.buffer(pdu.getCommandLength());
+        //TODO: directBuffer?
+        buffer.order(ByteOrder.BIG_ENDIAN);
         buffer.writeInt(pdu.getCommandLength());
         buffer.writeInt(pdu.getCommandId());
         buffer.writeInt(pdu.getCommandStatus());
@@ -85,7 +87,7 @@ public class DefaultPduTranscoder implements PduTranscoder {
     }
     
     @Override
-    public Pdu decode(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
+    public Pdu decode(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
         // wait until the length prefix is available
         if (buffer.readableBytes() < SmppConstants.PDU_INT_LENGTH) {
             return null;
@@ -108,12 +110,12 @@ public class DefaultPduTranscoder implements PduTranscoder {
         // at this point, we have the entire PDU and length already in the buffer
         // we'll create a new "view" of this PDU and read the data from the actual buffer
         // NOTE: this should be super fast since the underlying byte array doesn't get copied
-        ChannelBuffer buffer0 = buffer.readSlice(commandLength);
+        ByteBuf buffer0 = buffer.readSlice(commandLength);
 
         return doDecode(commandLength, buffer0);
     }
 
-    protected Pdu doDecode(int commandLength, ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
+    protected Pdu doDecode(int commandLength, ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
         // skip the length field because we already parsed it
         buffer.skipBytes(SmppConstants.PDU_INT_LENGTH);
 

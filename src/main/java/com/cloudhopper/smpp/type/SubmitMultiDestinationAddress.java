@@ -23,9 +23,9 @@ package com.cloudhopper.smpp.type;
 import com.cloudhopper.commons.util.HexUtil;
 import com.cloudhopper.commons.util.StringUtil;
 import com.cloudhopper.smpp.SmppConstants;
-import com.cloudhopper.smpp.util.ChannelBufferUtil;
+import com.cloudhopper.smpp.util.ByteBufUtil;
 import com.cloudhopper.smpp.util.PduUtil;
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 /**
  * @author innar.made@ishisystems.com
@@ -91,23 +91,23 @@ public class SubmitMultiDestinationAddress {
         return size;
     }
 
-    public void read(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
+    public void read(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
         destinationFlag = buffer.readByte();
         if (isAddress()) {
-            address = ChannelBufferUtil.readAddress(buffer);
+            address = ByteBufUtil.readAddress(buffer);
         } else if (isDistributionListName()) {
-            distributionListName = ChannelBufferUtil.readNullTerminatedString(buffer);
+            distributionListName = ByteBufUtil.readNullTerminatedString(buffer);
         } else {
             throwInvalidDestinationFlagException();
         }
     }
 
-    public void write(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
+    public void write(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
         buffer.writeByte(destinationFlag);
         if (isAddress()) {
-            ChannelBufferUtil.writeAddress(buffer, this.address);
+            ByteBufUtil.writeAddress(buffer, this.address);
         } else if (isDistributionListName()) {
-            ChannelBufferUtil.writeNullTerminatedString(buffer, this.distributionListName);
+            ByteBufUtil.writeNullTerminatedString(buffer, this.distributionListName);
         } else {
             throwInvalidDestinationFlagException();
         }

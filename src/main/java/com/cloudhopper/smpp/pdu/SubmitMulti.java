@@ -25,10 +25,9 @@ import com.cloudhopper.smpp.SmppConstants;
 import com.cloudhopper.smpp.type.RecoverablePduException;
 import com.cloudhopper.smpp.type.SubmitMultiDestinationAddress;
 import com.cloudhopper.smpp.type.UnrecoverablePduException;
-import com.cloudhopper.smpp.util.ChannelBufferUtil;
+import com.cloudhopper.smpp.util.ByteBufUtil;
 import com.cloudhopper.smpp.util.PduUtil;
-import org.jboss.netty.buffer.ChannelBuffer;
-
+import io.netty.buffer.ByteBuf;
 import java.util.Iterator;
 import java.util.List;
 
@@ -68,13 +67,13 @@ public class SubmitMulti extends BaseSm<SubmitMultiResp> {
     }
 
     @Override
-    protected void readDestinationAddress(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
-        submitMultiDestinationAddressList = ChannelBufferUtil.readSubmitMultiAddressList(buffer);
+    protected void readDestinationAddress(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
+        submitMultiDestinationAddressList = ByteBufUtil.readSubmitMultiAddressList(buffer);
     }
 
     @Override
-    protected void writeDestinationAddress(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
-        ChannelBufferUtil.writeSubmitMultiAddressList(buffer, submitMultiDestinationAddressList);
+    protected void writeDestinationAddress(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
+        ByteBufUtil.writeSubmitMultiAddressList(buffer, submitMultiDestinationAddressList);
     }
 
     @Override

@@ -25,10 +25,9 @@ import com.cloudhopper.smpp.SmppConstants;
 import com.cloudhopper.smpp.type.RecoverablePduException;
 import com.cloudhopper.smpp.type.SubmitMultiUnsuccessSme;
 import com.cloudhopper.smpp.type.UnrecoverablePduException;
-import com.cloudhopper.smpp.util.ChannelBufferUtil;
+import com.cloudhopper.smpp.util.ByteBufUtil;
 import com.cloudhopper.smpp.util.PduUtil;
-import org.jboss.netty.buffer.ChannelBuffer;
-
+import io.netty.buffer.ByteBuf;
 import java.util.Iterator;
 import java.util.List;
 
@@ -59,9 +58,9 @@ public class SubmitMultiResp extends BaseSmResp {
     }
 
     @Override
-    public void readBody(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
+    public void readBody(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
         super.readBody(buffer);
-        unsuccessSmes = ChannelBufferUtil.readSubmitMultiUnsuccessSmeList(buffer);
+        unsuccessSmes = ByteBufUtil.readSubmitMultiUnsuccessSmeList(buffer);
     }
 
     @Override
@@ -72,9 +71,9 @@ public class SubmitMultiResp extends BaseSmResp {
     }
 
     @Override
-    public void writeBody(ChannelBuffer buffer) throws UnrecoverablePduException, RecoverablePduException {
-        ChannelBufferUtil.writeNullTerminatedString(buffer, getMessageId());
-        ChannelBufferUtil.writeSubmitMultiUnsuccessSmeList(buffer, getUnsuccessSmes());
+    public void writeBody(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
+        ByteBufUtil.writeNullTerminatedString(buffer, getMessageId());
+        ByteBufUtil.writeSubmitMultiUnsuccessSmeList(buffer, getUnsuccessSmes());
     }
 
     @Override

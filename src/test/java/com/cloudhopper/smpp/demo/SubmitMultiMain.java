@@ -33,6 +33,7 @@ import com.cloudhopper.smpp.pdu.SubmitMultiResp;
 import com.cloudhopper.smpp.test.SmppTestDataProvider;
 import com.cloudhopper.smpp.type.Address;
 import com.cloudhopper.smpp.type.SubmitMultiDestinationAddress;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +80,7 @@ public class SubmitMultiMain {
             }
         });
 
-        clientBootstrap = new DefaultSmppClient(executor, 1, monitorExecutor);
+        clientBootstrap = new DefaultSmppClient(new NioEventLoopGroup(), monitorExecutor);
         DefaultSmppSessionHandler sessionHandler = new ClientSmppSessionHandler();
 
         SmppSessionConfiguration configuration = new SmppSessionConfiguration();
