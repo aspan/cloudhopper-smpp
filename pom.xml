@@ -26,16 +26,6 @@
   <dependencies>
     <!-- compile scope -->
     <dependency>
-      <groupId>com.cloudhopper</groupId>
-      <artifactId>ch-commons-util</artifactId>
-      <version>${ch-commons-util.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.cloudhopper</groupId>
-      <artifactId>ch-commons-charset</artifactId>
-      <version>${ch-commons-charset.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>${slf4j.version}</version>
@@ -45,6 +35,11 @@
       <artifactId>netty-all</artifactId>
       <version>${netty.version}</version>
     </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <version>2.5</version>
+    </dependency>
     <!-- provided scope -->
     <!-- runtime scope -->
     <!-- testing scope -->
@@ -52,12 +47,6 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.cloudhopper</groupId>
-      <artifactId>ch-commons-gsm</artifactId>
-      <version>${ch-commons-gsm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -76,9 +65,6 @@
 
   <properties>
     <main.java.package>com.cloudhopper.smpp</main.java.package>
-    <ch-commons-util.version>6.0.1</ch-commons-util.version>
-    <ch-commons-charset.version>3.0.2</ch-commons-charset.version>
-    <ch-commons-gsm.version>3.0.0</ch-commons-gsm.version>
     <netty.version>4.0.24.Final</netty.version>
   </properties>
 
