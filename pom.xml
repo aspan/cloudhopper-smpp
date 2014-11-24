@@ -4,7 +4,7 @@
   <groupId>com.cloudhopper</groupId>
   <artifactId>ch-smpp</artifactId>
   <packaging>jar</packaging>
-  <version>6.0.0-SNAPSHOT</version>
+  <version>6.0.0.Build.20141124</version>
   <name>ch-smpp</name>
   <description>Efficient, scalable, and flexible Java implementation of the Short Messaging Peer to Peer Protocol (SMPP)</description>
   <url>https://github.com/twitter/cloudhopper-smpp</url>
