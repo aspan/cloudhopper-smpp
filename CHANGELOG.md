@@ -3,6 +3,10 @@ Cloudhopper by Twitter
 
 cloudhopper-smpp
 ----------------
+## 6.0.0-netty4-beta-1
+ - Pre-release of port to Netty 4. Includes community contributions and changes based
+   on Trustin's review.
+ - Netty dependency changed to 4.0.25.Final.
 
 ## 5.0.6 - 2014-04-02
  - Support for low-level PDU listener (supports advanced logging, sniffing, and

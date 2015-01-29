@@ -4,7 +4,7 @@ package com.cloudhopper.smpp.impl;
  * #%L
  * ch-smpp
  * %%
- * Copyright (C) 2009 - 2012 Cloudhopper by Twitter
+ * Copyright (C) 2009 - 2015 Cloudhopper by Twitter
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -193,7 +193,8 @@ public class UnboundSmppSession implements SmppSessionChannelListener {
             // check if the write was a success
             if (!channelFuture.isSuccess()) {
                 // the write failed, make sure to throw an exception
-                throw new SmppChannelException(channelFuture.cause().getMessage(), channelFuture.cause());
+		if (channelFuture.cause() != null) throw new SmppChannelException(channelFuture.cause().getMessage(), channelFuture.cause());
+		else throw new SmppChannelException("ChannelFuture failed without cause.");
             }
         } catch (Exception e) {
             logger.error("Fatal exception thrown while attempting to send response PDU: {}", e);

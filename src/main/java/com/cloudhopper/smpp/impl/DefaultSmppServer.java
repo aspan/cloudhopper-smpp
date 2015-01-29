@@ -4,7 +4,7 @@ package com.cloudhopper.smpp.impl;
  * #%L
  * ch-smpp
  * %%
- * Copyright (C) 2009 - 2012 Cloudhopper by Twitter
+ * Copyright (C) 2009 - 2015 Cloudhopper by Twitter
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,7 +176,7 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
         if (configuration.isJmxEnabled()) {
             // register the this queue manager as an mbean
             try {
-                ObjectName name = new ObjectName(configuration.getJmxDomain() + ":name=" + configuration.getName());
+                ObjectName name = new ObjectName(configuration.getJmxDomain() + ":name=" + ObjectName.quote(configuration.getName()));
                 ManagementFactory.getPlatformMBeanServer().registerMBean(this, name);
             } catch (Exception e) {
                 // log the error, but don't throw an exception for this datasource
@@ -192,7 +192,7 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
         if (configuration.isJmxEnabled()) {
             // register the this queue manager as an mbean
             try {
-                ObjectName name = new ObjectName(configuration.getJmxDomain() + ":name=" + configuration.getName());
+                ObjectName name = new ObjectName(configuration.getJmxDomain() + ":name=" + ObjectName.quote(configuration.getName()));
                 ManagementFactory.getPlatformMBeanServer().unregisterMBean(name);
             } catch (Exception e) {
                 // log the error, but don't throw an exception for this datasource
@@ -250,7 +250,12 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
 
             // wait until the connection is made successfully
             boolean timeout = !f.await(configuration.getBindTimeout());
-
+	    // From @trustin: You don't really set a timeout for bind operation.  I would do this instead:
+	    //                    this.serverBootstrap.bind(...).sync();
+	    //                ChannelFuture.sync() is a very useful operation.  It waits until the future is
+	    //                fulfilled and then rethrow the exception if the operation has failed.
+	    // Not sure if we can do this, as we actually need to retry on timeout.																       
+	    
             if (timeout)
                 throw new SmppChannelException("Can't bind to port " + configuration.getPort()
                         + " after " + configuration.getBindTimeout() + " milliseconds");
@@ -360,8 +365,10 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
 
         // make sure the channel is not being read/processed (until we flag we're ready later on)
 
-        //TODO how do we do this in netty4?
-        // channel.setReadable(false).awaitUninterruptibly();
+        //TODO
+	// @trustin: Channel.config().setAutoRead(false) will suspend read.  To resume, call setAutoRead(true).
+	//           However, I would recommend setting autoRead to false in ChannelInitializer.initChannel()
+	//           so that absolutely nothing is read since the connection is established.
         channel.config().setAutoRead(false);
 
         // auto negotiate the interface version in use based on the requested interface version

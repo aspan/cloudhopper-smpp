@@ -1,4 +1,4 @@
-Cloudhopper SMPP by Twitter [![Build Status](https://secure.travis-ci.org/twitter/cloudhopper-smpp.png?branch=master)](http://travis-ci.org/twitter/cloudhopper-smpp)
+Cloudhopper by Twitter
 ============================
 
 cloudhopper-smpp
@@ -50,7 +50,7 @@ any commercial questions/ideas pertaining to this library, feel free to reach
 out to [Mfizz](http://mfizz.com).
 
 - Joe Lauer (Twitter: [@jjlauer](http://twitter.com/jjlauer))
-- Garth Patil (Twitter: [@trg](http://twitter.com/trg))
+- Garth (Twitter: [@trg](http://twitter.com/trg))
 
 Installation
 ------------
@@ -115,6 +115,6 @@ Please let us know if you have other tutorials worth mentioning!
 License
 -------
 
-Copyright (C) 2009-2014 Twitter, Inc.
+Copyright (C) 2010-2015 Twitter, Inc.
 
 This work is licensed under the Apache License, Version 2.0. See LICENSE for details.

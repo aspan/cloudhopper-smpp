@@ -4,7 +4,7 @@ package com.cloudhopper.smpp.demo;
  * #%L
  * ch-smpp
  * %%
- * Copyright (C) 2009 - 2012 Cloudhopper by Twitter
+ * Copyright (C) 2009 - 2015 Cloudhopper by Twitter
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public class SlowServerMain {
         System.in.read();
 
         logger.info("SMPP server stopping");
-        smppServer.stop();
+        smppServer.destroy();
         logger.info("SMPP server stopped");
     }
 
