@@ -21,7 +21,6 @@ package com.cloudhopper.smpp.util;
  */
 
 // third party imports
-
 import com.cloudhopper.smpp.SmppConstants;
 import com.cloudhopper.smpp.pdu.BufferHelper;
 import com.cloudhopper.smpp.pdu.DeliverSm;

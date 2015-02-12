@@ -32,6 +32,7 @@ import com.cloudhopper.smpp.SmppServerSession;
 import com.cloudhopper.smpp.SmppSessionConfiguration;
 import com.cloudhopper.smpp.SmppSessionCounters;
 import com.cloudhopper.smpp.SmppSessionHandler;
+import com.cloudhopper.smpp.SmppSessionListener;
 import com.cloudhopper.smpp.jmx.DefaultSmppSessionMXBean;
 import com.cloudhopper.smpp.pdu.BaseBind;
 import com.cloudhopper.smpp.pdu.BaseBindResp;
@@ -509,6 +510,15 @@ public class DefaultSmppSession implements SmppServerSession, SmppSessionChannel
             throw new SmppTimeoutException(e.getMessage(), e);
         }
         
+        if(this.sessionHandler instanceof SmppSessionListener) {
+            if(!((SmppSessionListener)this.sessionHandler).firePduDispatch(pdu)) {
+                logger.info("dispatched request PDU discarded: {}", pdu);
+                future.cancel(); //@todo probably throwing exception here is better solution?
+                return future;
+            }
+        }
+
+        // write the pdu out & wait timeout amount of time
         this.channel.writeAndFlush(buffer);
         
         this.countSendRequestPdu(pdu);
@@ -530,6 +540,13 @@ public class DefaultSmppSession implements SmppServerSession, SmppSessionChannel
         // assign the next PDU sequence # if its not yet assigned
         if (!pdu.hasSequenceNumberAssigned()) {
             pdu.setSequenceNumber(this.sequenceNumber.next());
+        }
+        
+        if(this.sessionHandler instanceof SmppSessionListener) {
+            if(!((SmppSessionListener)this.sessionHandler).firePduDispatch(pdu)) {
+                logger.info("dispatched response PDU discarded: {}", pdu);
+                return;
+            }
         }
 
         // encode the pdu into a buffer

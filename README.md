@@ -1,7 +1,17 @@
 Cloudhopper by Twitter
 ============================
 
-cloudhopper-smpp
+News
+------------------------
+ * Netty 4 beta 2 is available at Maven Central. Please test and submit issues this month (2/2015).
+
+        <dependency>
+          <groupId>com.cloudhopper</groupId>
+          <artifactId>ch-smpp</artifactId>
+          <version>6.0.0-netty4-beta-2</version>
+        </dependency>
+
+Overview
 ------------------------
 
 Efficient, scalable, rock-solid, and flexible Java implementation of the Short
@@ -115,6 +125,6 @@ Please let us know if you have other tutorials worth mentioning!
 License
 -------
 
-Copyright (C) 2010-2015 Twitter, Inc.
+Copyright (C) 2009-2015 Twitter, Inc.
 
 This work is licensed under the Apache License, Version 2.0. See LICENSE for details.
