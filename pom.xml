@@ -14,7 +14,7 @@
     <url>https://github.com/twitter/cloudhopper-smpp</url>
     <connection>scm:git:https://github.com/twitter/cloudhopper-smpp.git</connection>
     <developerConnection>scm:git:git@github.com:twitter/cloudhopper-smpp.git</developerConnection>
-    <tag>netty4</tag>
+    <tag>develop</tag>
   </scm>
   
   <parent>
@@ -57,7 +57,7 @@
     <dependency>
       <groupId>com.cloudhopper</groupId>
       <artifactId>ch-commons-gsm</artifactId>
-      <version>3.0.0</version>
+      <version>${ch-commons-gsm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -90,7 +90,8 @@ public class SmppServerConnector extends LoggingChannelInboundHandlerAdapter {
 
         // add a new instance of a thread renamer
         channel.pipeline().addLast(SmppChannelConstants.PIPELINE_SESSION_THREAD_RENAMER_NAME, new SmppSessionThreadRenamer(threadName));
-        
+        // add a new instance of an encoder
+        channel.pipeline().addLast(SmppChannelConstants.PIPELINE_SESSION_PDU_ENCODER_NAME, new SmppSessionPduEncoder(server.getTranscoder()));
         // add a new instance of a decoder (that takes care of handling frames)
         channel.pipeline().addLast(SmppChannelConstants.PIPELINE_SESSION_PDU_DECODER_NAME, new SmppSessionPduDecoder(server.getTranscoder()));
 
