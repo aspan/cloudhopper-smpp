@@ -155,7 +155,9 @@ public class DefaultSmppClient implements SmppClient {
         // this.clientBootstrap.releaseExternalResources();
 
         try {
-            clientChannel.closeFuture().sync();
+            if (clientChannel != null) {
+                clientChannel.closeFuture().sync();
+            }
             this.clientBootstrap = null;
         } catch (InterruptedException e) {
             logger.warn("Thread interrupted closing client channel.", e);
