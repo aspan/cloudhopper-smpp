@@ -246,7 +246,7 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
             throw new SmppChannelException("Unable to start: server is destroyed");
         }
         try {
-            ChannelFuture f = this.serverBootstrap.bind(new InetSocketAddress(configuration.getPort()));
+            ChannelFuture f = this.serverBootstrap.bind(new InetSocketAddress(configuration.getHost(), configuration.getPort()));
 
             // wait until the connection is made successfully
             boolean timeout = !f.await(configuration.getBindTimeout());
@@ -264,7 +264,7 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
                 throw new SmppChannelException("Can't bind to port " + configuration.getPort()
                         + " future cause: " + f.cause());
 
-            logger.info("{} started on SMPP port [{}]", configuration.getName(), configuration.getPort());
+            logger.info("{} started at {}:{}", configuration.getName(), configuration.getHost(), configuration.getPort());
             serverChannel = f.channel();
         } catch (ChannelException e) {
             throw new SmppChannelException(e.getMessage(), e);
@@ -290,7 +290,7 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
                 logger.warn("Thread interrupted closing server channel.", e);
             }
         }
-        logger.info("{} stopped on SMPP port [{}]", configuration.getName(), configuration.getPort());
+        logger.info("{} stopped at {}:{}", configuration.getName(), configuration.getHost(), configuration.getPort());
     }
 
     @Override

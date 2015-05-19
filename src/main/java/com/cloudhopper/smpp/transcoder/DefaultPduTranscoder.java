@@ -158,6 +158,8 @@ public class DefaultPduTranscoder implements PduTranscoder {
                 pdu = new QuerySm();
             } else if (commandId == SmppConstants.CMD_ID_SUBMIT_MULTI) {
                 pdu = new SubmitMulti();
+            } else if (commandId == SmppConstants.CMD_ID_REPLACE_SM) {
+                pdu = new ReplaceSm();
             } else if (commandId == SmppConstants.CMD_ID_BIND_TRANSCEIVER) {
                 pdu = new BindTransceiver();
             } else if (commandId == SmppConstants.CMD_ID_BIND_TRANSMITTER) {
@@ -166,6 +168,8 @@ public class DefaultPduTranscoder implements PduTranscoder {
                 pdu = new BindReceiver();
             } else if (commandId == SmppConstants.CMD_ID_UNBIND) {
                 pdu = new Unbind();
+            } else if (commandId == SmppConstants.CMD_ID_ALERT_NOTIFICATION) {
+                pdu = new AlertNotification();
             } else {
                 pdu = new PartialPdu(commandId);
             }
@@ -182,6 +186,8 @@ public class DefaultPduTranscoder implements PduTranscoder {
                 pdu = new QuerySmResp();
             } else if (commandId == SmppConstants.CMD_ID_SUBMIT_MULTI_RESP) {
                 pdu = new SubmitMultiResp();
+            } else if (commandId == SmppConstants.CMD_ID_REPLACE_SM_RESP) {
+                pdu = new ReplaceSmResp();
             } else if (commandId == SmppConstants.CMD_ID_ENQUIRE_LINK_RESP) {
                 pdu = new EnquireLinkResp();
             } else if (commandId == SmppConstants.CMD_ID_BIND_TRANSCEIVER_RESP) {

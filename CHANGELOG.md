@@ -6,11 +6,16 @@ cloudhopper-smpp
 ## 6.0.0-netty4-beta-2
  - ch-commons-util version bumped from 6.0.1 to 6.0.2 to fix race condition bug 
    in WindowFuture:
+## 5.0.8 - 2015-04-17
+ - Fixed issue where rawErrorCode not set on DeliveryReceipt (khaing211)
+ - Support for host address in SmppServerConfiguration (pgoergler)
      https://github.com/twitter/cloudhopper-smpp/issues/61
 
 ## 6.0.0-netty4-beta-1
+ - Improved demo for echo server (dwilkie)
  - Pre-release of port to Netty 4. Includes community contributions and changes based
    on Trustin's review.
+ - Tlv class supports equals and hashCode (skytreader)
  - Netty dependency changed to 4.0.25.Final.
 
 ## 5.0.7 - 2015-02-02
