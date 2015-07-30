@@ -225,6 +225,13 @@ public class SmppConstants {
 
     /** ESM Class */
 
+    /** Message Mode (bits 1-0) */
+    public static final byte ESM_CLASS_MM_MASK          = 0x03;  // BIN 00000011
+    public static final byte ESM_CLASS_MM_DEFAULT       = 0x00;  // BIN 00000000
+    public static final byte ESM_CLASS_MM_DATAGRAM      = 0x01;  // BIN 00000001
+    public static final byte ESM_CLASS_MM_TRANSACTION   = 0x02;  // BIN 00000010
+    public static final byte ESM_CLASS_MM_STORE_FORWARD = 0x03;  // BIN 00000011
+
     /** Message Type (bits 5-2) */
     public static final byte ESM_CLASS_MT_MASK = (byte)0x1C;                          // BIN:  11100
     public static final byte ESM_CLASS_MT_SMSC_DELIVERY_RECEIPT = (byte)0x04;         // BIN:    100, Recv Msg contains SMSC delivery receipt
@@ -320,7 +327,15 @@ public class SmppConstants {
     // SMPP Data Coding
     //
     public static final byte DATA_CODING_DEFAULT 	= (byte)0x00;	// SMSC Default Alphabet
-    public static final byte DATA_CODING_GSM 		= (byte)0x01;	// IA5 (CCITT T.50)/ASCII (ANSI X3.4)
+    public static final byte DATA_CODING_IA5		= (byte)0x01;	// IA5 (CCITT T.50)/ASCII (ANSI X3.4)
+
+    /**
+     * @deprecated May be removed in a future version
+     *      Please use IA5 for DCS 0x01 or DEFAULT for DCS 0x00
+     */
+    @Deprecated
+    public static final byte DATA_CODING_GSM		= (byte)0x01;
+
     public static final byte DATA_CODING_8BITA		= (byte)0x02;	// Octet unspecified (8-bit binary) defined for TDMA and/ or CDMA but not defined for GSM
     public static final byte DATA_CODING_LATIN1		= (byte)0x03;	// Latin 1 (ISO-8859-1)
     public static final byte DATA_CODING_8BIT		= (byte)0x04;	// Octet unspecified (8-bit binary) ALL TECHNOLOGIES
