@@ -24,7 +24,7 @@ cloudhopper-smpp
    in WindowFuture:
      https://github.com/twitter/cloudhopper-smpp/issues/61
  - Netty dependency bumped from 3.9.0.Final to 3.9.6.Final
- 
+
 ## 5.0.6 - 2014-04-02
  - Support for low-level PDU listener (supports advanced logging, sniffing, and
    discarding before normal processing). New methods overridable in

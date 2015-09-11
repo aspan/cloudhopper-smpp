@@ -49,11 +49,11 @@ public class PerformanceClientMain {
     // performance testing options (just for this sample)
     //
     // total number of sessions (conns) to create
-    static public final int SESSION_COUNT = 10;
+    static public final int SESSION_COUNT = 2;
     // size of window per session
-    static public final int WINDOW_SIZE = 50;
+    static public final int WINDOW_SIZE = 100;
     // total number of submit to send total across all sessions
-    static public final int SUBMIT_TO_SEND = 2000;
+    static public final int SUBMIT_TO_SEND = 10000;
     // total number of submit sent
     static public final AtomicInteger SUBMIT_SENT = new AtomicInteger(0);
     
@@ -96,11 +96,11 @@ public class PerformanceClientMain {
         config.setWindowSize(WINDOW_SIZE);
         config.setName("Tester.Session.0");
         config.setType(SmppBindType.TRANSCEIVER);
-        config.setHost("127.0.0.1");
-        config.setPort(2776);
+        config.setHost("93.158.78.4");
+        config.setPort(3600);
         config.setConnectTimeout(10000);
-        config.setSystemId("1234567890");
-        config.setPassword("password");
+        config.setSystemId("lekab_TST");
+        config.setPassword("ZNER7vYq");
         config.getLoggingOptions().setLogBytes(false);
         // to enable monitoring (request expiration)
         config.setRequestExpiryTimeout(30000);

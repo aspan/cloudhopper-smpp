@@ -22,6 +22,7 @@ package com.cloudhopper.smpp.pdu;
 
 import com.cloudhopper.commons.util.HexUtil;
 import com.cloudhopper.commons.util.StringUtil;
+import com.cloudhopper.smpp.SmppConstants;
 import com.cloudhopper.smpp.type.Address;
 import com.cloudhopper.smpp.type.RecoverablePduException;
 import com.cloudhopper.smpp.type.SmppInvalidArgumentException;
@@ -30,32 +31,39 @@ import com.cloudhopper.smpp.util.ByteBufUtil;
 import com.cloudhopper.smpp.util.PduUtil;
 import io.netty.buffer.ByteBuf;
 
-/**
- * Base "short message" PDU as a super class for submit_sm, deliver_sm, and
- * data_sm.  Having a common base class they all inherit from makes it easier
- * to work with requests in a standard way, even though data_sm does NOT actually
- * support all of the same parameters.
- * 
- * @author joelauer (twitter: @jjlauer or <a href="http://twitter.com/jjlauer" target=window>http://twitter.com/jjlauer</a>) 
- */
-public abstract class BaseSm<R extends PduResponse> extends PduRequest<R> {
+public class ReplaceSm extends PduRequest<ReplaceSmResp> {
 
-    protected String serviceType;
-    protected Address sourceAddress;
-    protected Address destAddress;
-    protected byte esmClass;
-    private byte protocolId;                    // not present in data_sm
-    private byte priority;                      // not present in data_sm
-    private String scheduleDeliveryTime;        // not present in data_sm
-    private String validityPeriod;              // not present in data_sm
-    protected byte registeredDelivery;
-    private byte replaceIfPresent;              // not present in data_sm
-    protected byte dataCoding;
-    private byte defaultMsgId;                  // not present in data_sm, not used in deliver_sm
-    private byte[] shortMessage;                // not present in data_sm         
+    private String messageId;
+    private Address sourceAddress;
+    private String scheduleDeliveryTime;
+    private String validityPeriod;
+    private byte registeredDelivery;
+    private byte defaultMsgId;
+    private byte[] shortMessage;
 
-    public BaseSm(int commandId, String name) {
-        super(commandId, name);
+    public ReplaceSm() {
+        super(SmppConstants.CMD_ID_REPLACE_SM, "replace_sm");
+    }
+
+    @Override
+    public ReplaceSmResp createResponse() {
+        ReplaceSmResp resp = new ReplaceSmResp();
+        resp.setSequenceNumber(this.getSequenceNumber());
+        return resp;
+    }
+
+    @Override
+    public Class<ReplaceSmResp> getResponseClass() {
+        return ReplaceSmResp.class;
+    }
+
+
+    public String getMessageId() {
+        return messageId;
+    }
+
+    public void setMessageId(String messageId) {
+        this.messageId = messageId;
     }
 
     public int getShortMessageLength() {
@@ -71,22 +79,6 @@ public abstract class BaseSm<R extends PduResponse> extends PduRequest<R> {
             throw new SmppInvalidArgumentException("A short message in a PDU can only be a max of 255 bytes [actual=" + value.length + "]; use optional parameter message_payload as an alternative");
         }
         this.shortMessage = value;
-    }
-
-    public byte getReplaceIfPresent() {
-        return this.replaceIfPresent;
-    }
-
-    public void setReplaceIfPresent(byte value) {
-        this.replaceIfPresent = value;
-    }
-
-    public byte getDataCoding() {
-        return this.dataCoding;
-    }
-
-    public void setDataCoding(byte value) {
-        this.dataCoding = value;
     }
 
     public byte getDefaultMsgId() {
@@ -121,38 +113,6 @@ public abstract class BaseSm<R extends PduResponse> extends PduRequest<R> {
         this.scheduleDeliveryTime = value;
     }
 
-    public byte getPriority() {
-        return this.priority;
-    }
-
-    public void setPriority(byte value) {
-        this.priority = value;
-    }
-
-    public byte getEsmClass() {
-        return this.esmClass;
-    }
-
-    public void setEsmClass(byte value) {
-        this.esmClass = value;
-    }
-
-    public byte getProtocolId() {
-        return this.protocolId;
-    }
-
-    public void setProtocolId(byte value) {
-        this.protocolId = value;
-    }
-
-    public String getServiceType() {
-        return this.serviceType;
-    }
-
-    public void setServiceType(String value) {
-        this.serviceType = value;
-    }
-
     public Address getSourceAddress() {
         return this.sourceAddress;
     }
@@ -161,27 +121,13 @@ public abstract class BaseSm<R extends PduResponse> extends PduRequest<R> {
         this.sourceAddress = value;
     }
 
-    public Address getDestAddress() {
-        return this.destAddress;
-    }
-
-    public void setDestAddress(Address value) {
-        this.destAddress = value;
-    }
-
     @Override
     public void readBody(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
-        this.serviceType = ByteBufUtil.readNullTerminatedString(buffer);
+        this.messageId = ByteBufUtil.readNullTerminatedString(buffer);
         this.sourceAddress = ByteBufUtil.readAddress(buffer);
-        readDestinationAddress(buffer);
-        this.esmClass = buffer.readByte();
-        this.protocolId = buffer.readByte();
-        this.priority = buffer.readByte();
         this.scheduleDeliveryTime = ByteBufUtil.readNullTerminatedString(buffer);
         this.validityPeriod = ByteBufUtil.readNullTerminatedString(buffer);
         this.registeredDelivery = buffer.readByte();
-        this.replaceIfPresent = buffer.readByte();
-        this.dataCoding = buffer.readByte();
         this.defaultMsgId = buffer.readByte();
         // this is always an unsigned version of the short message length
         short shortMessageLength = buffer.readUnsignedByte();
@@ -192,32 +138,24 @@ public abstract class BaseSm<R extends PduResponse> extends PduRequest<R> {
     @Override
     public int calculateByteSizeOfBody() {
         int bodyLength = 0;
-        bodyLength += PduUtil.calculateByteSizeOfNullTerminatedString(this.serviceType);
+        bodyLength += PduUtil.calculateByteSizeOfNullTerminatedString(this.messageId);
         bodyLength += PduUtil.calculateByteSizeOfAddress(this.sourceAddress);
-        bodyLength += calculateDestinationAddressSize();
-        bodyLength += 3;    // esmClass, priority, protocolId
         bodyLength += PduUtil.calculateByteSizeOfNullTerminatedString(this.scheduleDeliveryTime);
         bodyLength += PduUtil.calculateByteSizeOfNullTerminatedString(this.validityPeriod);
-        bodyLength += 5;    // regDelivery, replace, dataCoding, defaultMsgId, messageLength bytes
+        bodyLength += 3;    // regDelivery, defaultMsgId, messageLength bytes
         bodyLength += getShortMessageLength();
         return bodyLength;
     }
 
     @Override
     public void writeBody(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
-        ByteBufUtil.writeNullTerminatedString(buffer, this.serviceType);
+        ByteBufUtil.writeNullTerminatedString(buffer, this.messageId);
         ByteBufUtil.writeAddress(buffer, this.sourceAddress);
-        writeDestinationAddress(buffer);
-        buffer.writeByte(this.esmClass);
-        buffer.writeByte(this.protocolId);
-        buffer.writeByte(this.priority);
         ByteBufUtil.writeNullTerminatedString(buffer, this.scheduleDeliveryTime);
         ByteBufUtil.writeNullTerminatedString(buffer, this.validityPeriod);
         buffer.writeByte(this.registeredDelivery);
-        buffer.writeByte(this.replaceIfPresent);
-        buffer.writeByte(this.dataCoding);
         buffer.writeByte(this.defaultMsgId);
-        buffer.writeByte((byte)getShortMessageLength());
+        buffer.writeByte((byte) getShortMessageLength());
         if (this.shortMessage != null) {
             buffer.writeBytes(this.shortMessage);
         }
@@ -225,38 +163,19 @@ public abstract class BaseSm<R extends PduResponse> extends PduRequest<R> {
 
     @Override
     public void appendBodyToString(StringBuilder buffer) {
-        buffer.append("(serviceType [");
-        buffer.append(StringUtil.toStringWithNullAsEmpty(this.serviceType));
+        buffer.append("( messageId [");
+        buffer.append(StringUtil.toStringWithNullAsEmpty(this.messageId));
         buffer.append("] sourceAddr [");
         buffer.append(StringUtil.toStringWithNullAsEmpty(this.sourceAddress));
-        appendDestinationAddressToString(buffer);
-
-        buffer.append("] esmCls [0x");
-        buffer.append(HexUtil.toHexString(this.esmClass));
+        buffer.append("] scheduleDeliveryTime [");
+        buffer.append(StringUtil.toStringWithNullAsEmpty(this.scheduleDeliveryTime));
+        buffer.append("] validityPeriod [");
+        buffer.append(StringUtil.toStringWithNullAsEmpty(this.validityPeriod));
         buffer.append("] regDlvry [0x");
         buffer.append(HexUtil.toHexString(this.registeredDelivery));
-        // NOTE: skipped protocolId, priority, scheduledDlvryTime, validityPeriod,replace and defaultMsgId
-        buffer.append("] dcs [0x");
-        buffer.append(HexUtil.toHexString(this.dataCoding));
         buffer.append("] message [");
         HexUtil.appendHexString(buffer, this.shortMessage);
         buffer.append("])");
     }
 
-    protected void readDestinationAddress(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
-        this.destAddress = ByteBufUtil.readAddress(buffer);
-    }
-
-    protected void writeDestinationAddress(ByteBuf buffer) throws UnrecoverablePduException, RecoverablePduException {
-        ByteBufUtil.writeAddress(buffer, this.destAddress);
-    }
-
-    protected int calculateDestinationAddressSize() {
-        return PduUtil.calculateByteSizeOfAddress(this.destAddress);
-    }
-
-    protected void appendDestinationAddressToString(StringBuilder buffer) {
-        buffer.append("] destAddr [");
-        buffer.append(StringUtil.toStringWithNullAsEmpty(this.destAddress));
-    }
 }

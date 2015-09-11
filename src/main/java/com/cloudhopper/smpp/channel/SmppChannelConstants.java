@@ -40,4 +40,5 @@ public class SmppChannelConstants {
     public static final String PIPELINE_SESSION_SSL_NAME = "smppSessionSSL"; 
     public static final String PIPELINE_SESSION_WRITE_TIMEOUT_NAME = "smppSessionWriteTimeout";
 
+    public static final String PIPELINE_SESSION_PDU_ENCODER_NAME = "smppSessionPduEncoder";
 }

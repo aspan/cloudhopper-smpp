@@ -381,6 +381,5 @@ public class DeliveryReceiptTest {
         // broken null-check caused date format to be applied to null date,
         // which results in the current time being formatted instead of all-zeroes
         Assert.assertThat(dlr.toShortMessage(), new StringContains(DeliveryReceipt.FIELD_DONE_DATE + "0000000000"));
-
     }
 }

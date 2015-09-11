@@ -20,8 +20,17 @@ package com.cloudhopper.smpp.impl;
  * #L%
  */
 
-import com.cloudhopper.smpp.*;
-import com.cloudhopper.smpp.channel.*;
+import com.cloudhopper.smpp.SmppConstants;
+import com.cloudhopper.smpp.SmppServer;
+import com.cloudhopper.smpp.SmppServerConfiguration;
+import com.cloudhopper.smpp.SmppServerHandler;
+import com.cloudhopper.smpp.SmppSession;
+import com.cloudhopper.smpp.SmppSessionConfiguration;
+import com.cloudhopper.smpp.channel.SmppChannelConstants;
+import com.cloudhopper.smpp.channel.SmppServerConnector;
+import com.cloudhopper.smpp.channel.SmppSessionLogger;
+import com.cloudhopper.smpp.channel.SmppSessionThreadRenamer;
+import com.cloudhopper.smpp.channel.SmppSessionWrapper;
 import com.cloudhopper.smpp.jmx.DefaultSmppServerMXBean;
 import com.cloudhopper.smpp.pdu.BaseBind;
 import com.cloudhopper.smpp.pdu.BaseBindResp;
@@ -32,7 +41,12 @@ import com.cloudhopper.smpp.transcoder.PduTranscoder;
 import com.cloudhopper.smpp.type.SmppChannelException;
 import com.cloudhopper.smpp.type.SmppProcessingException;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelException;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -40,18 +54,15 @@ import io.netty.channel.oio.OioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.oio.OioServerSocketChannel;
-import io.netty.handler.timeout.WriteTimeoutHandler;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.util.Timer;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.management.ObjectName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of an SmppServer that supports SMPP version 3.3 and 3.4.
@@ -134,7 +145,8 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
 
         // set options for the server socket that are useful
         this.serverBootstrap.option(ChannelOption.SO_REUSEADDR, configuration.isReuseAddress());
-        
+        this.serverBootstrap.option(ChannelOption.TCP_NODELAY, true);
+
         // we use the same default pipeline for all new channels - no need for a factory
         this.serverConnector = new SmppServerConnector(channels, this);
 
@@ -235,7 +247,7 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
         }
         try {
             ChannelFuture f = this.serverBootstrap.bind(new InetSocketAddress(configuration.getHost(), configuration.getPort()));
-            logger.info("{} started at {}:{}", configuration.getName(), configuration.getHost(), configuration.getPort());
+
             // wait until the connection is made successfully
             boolean timeout = !f.await(configuration.getBindTimeout());
 	    // From @trustin: You don't really set a timeout for bind operation.  I would do this instead:
@@ -299,7 +311,6 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
         }
 
         this.serverBootstrap = null;
-
         unregisterMBean();
         logger.info("{} destroyed on SMPP port [{}]", configuration.getName(), configuration.getPort());
     }
@@ -373,13 +384,6 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
         // add a logging handler after the thread renamer
         SmppSessionLogger loggingHandler = new SmppSessionLogger(DefaultSmppSession.class.getCanonicalName(), config.getLoggingOptions());
         channel.pipeline().addAfter(SmppChannelConstants.PIPELINE_SESSION_THREAD_RENAMER_NAME, SmppChannelConstants.PIPELINE_SESSION_LOGGER_NAME, loggingHandler);
-
-        // add a writeTimeout handler after the logger
-        if (config.getWriteTimeout() > 0) {
-            WriteTimeoutHandler writeTimeoutHandler = new WriteTimeoutHandler(config.getWriteTimeout(), TimeUnit.MILLISECONDS);
-            channel.pipeline().addAfter(SmppChannelConstants.PIPELINE_SESSION_LOGGER_NAME, SmppChannelConstants.PIPELINE_SESSION_WRITE_TIMEOUT_NAME, writeTimeoutHandler);
-        }
-
         // decoder in pipeline is ok (keep it)
 
         // create a new wrapper around a session to pass the pdu up the chain
