@@ -1,6 +1,10 @@
 *~
+*.ipr
+*.iml
+.idea/
 target/
 .classpath
 .project
 .settings/
-
+atlassian-ide-plugin.xml
+tests.log
