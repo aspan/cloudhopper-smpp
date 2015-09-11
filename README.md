@@ -3,7 +3,7 @@ Cloudhopper by Twitter
 
 News
 ------------------------
- * Netty 4 beta 2 is available at Maven Central. Please test and submit issues this month (2/2015).
+ * Netty 4 beta is available at Maven Central. Please test and submit issues.
  Since stability & reliability is critical for this library and how netty-4
  required significant changes -- we still need your help with beta testing.
 

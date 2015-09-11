@@ -264,7 +264,7 @@ public class DefaultSmppServer implements SmppServer, DefaultSmppServerMXBean {
                 throw new SmppChannelException("Can't bind to port " + configuration.getPort()
                         + " future cause: " + f.cause());
 
-            logger.info("{} started at {}:{}", configuration.getName(), configuration.getHost(), configuration.getPort());
+            logger.info("{} started on SMPP port [{}]", configuration.getName(), configuration.getPort());
             serverChannel = f.channel();
         } catch (ChannelException e) {
             throw new SmppChannelException(e.getMessage(), e);
