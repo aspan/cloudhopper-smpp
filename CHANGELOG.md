@@ -8,6 +8,15 @@ cloudhopper-smpp
    in WindowFuture:
      https://github.com/twitter/cloudhopper-smpp/issues/61
 
+## 5.0.9 - 2015-11-24
+ - Add support for missing pdus and tags
+ - Allow unbound channel to respond to enquire_link PDU
+ - Corrected name of DataCoding SmppConstant to IA5 (not GSM)
+ - Updated value of DATA_CODING_GSM constant and made it deprecated
+ - Add ESM_CLASS Message Mode constants
+ - DefaultSmppServer should use IO executor passed to its constructor
+ - Fix-up comments on the SMPP error code constants
+
 ## 6.0.0-netty4-beta-1
  - Pre-release of port to Netty 4. Includes community contributions and changes based
    on Trustin's review.

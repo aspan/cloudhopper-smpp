@@ -1,27 +1,38 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.cloudhopper</groupId>
+    <groupId>com.fizzed</groupId>
   <artifactId>ch-smpp</artifactId>
   <packaging>jar</packaging>
-  <version>6.0.0-netty4-beta-3-SNAPSHOT</version>
+    <version>5.0.10-SNAPSHOT</version>
   <name>ch-smpp</name>
   <description>Efficient, scalable, and flexible Java implementation of the Short Messaging Peer to Peer Protocol (SMPP)</description>
   <url>https://github.com/twitter/cloudhopper-smpp</url>
   <inceptionYear>2009</inceptionYear>
     
   <scm>
-    <url>https://github.com/twitter/cloudhopper-smpp</url>
-    <connection>scm:git:https://github.com/twitter/cloudhopper-smpp.git</connection>
-    <developerConnection>scm:git:git@github.com:twitter/cloudhopper-smpp.git</developerConnection>
-    <tag>develop</tag>
+        <url>https://github.com/fizzed/cloudhopper-smpp</url>
+        <connection>scm:git:https://github.com/fizzed/cloudhopper-smpp.git</connection>
+        <developerConnection>scm:git:git@github.com:fizzed/cloudhopper-smpp.git</developerConnection>
+        <tag>master</tag>
   </scm>
   
   <parent>
-    <groupId>com.cloudhopper</groupId>
-    <artifactId>ch-maven-parent-oss</artifactId>
-    <version>1.5</version>
+        <groupId>com.fizzed</groupId>
+        <artifactId>fizzed-maven-parent</artifactId>
+        <version>1.15</version>
   </parent>
+
+    <properties>
+        <main.java.package>com.cloudhopper.smpp</main.java.package>
+        <ch-commons-util.version>6.0.2</ch-commons-util.version>
+        <ch-commons-charset.version>3.0.2</ch-commons-charset.version>
+        <ch-commons-gsm.version>3.0.0</ch-commons-gsm.version>
+        <netty.version>4.0.31.Final</netty.version>
+        <slf4j.version>1.7.13</slf4j.version>
+        <!-- workaround travis ci maven version requirement -->
+        <maven.enforce.version>3.2.5</maven.enforce.version>
+    </properties>
 
   <dependencies>
     <!-- compile scope -->
@@ -40,7 +51,7 @@
       <artifactId>slf4j-api</artifactId>
       <version>${slf4j.version}</version>
     </dependency>
-    <dependency> <!-- TODO: select only the netty deps we need -->
+        <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-all</artifactId>
       <version>${netty.version}</version>
@@ -51,7 +62,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
+            <version>4.12</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -62,25 +73,10 @@
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-      <version>${logback.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
+            <version>1.1.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
 
-  <properties>
-    <main.java.package>com.cloudhopper.smpp</main.java.package>
-    <ch-commons-util.version>6.0.2</ch-commons-util.version>
-    <ch-commons-charset.version>3.0.2</ch-commons-charset.version>
-    <ch-commons-gsm.version>3.0.0</ch-commons-gsm.version>
-    <netty.version>4.0.31.Final</netty.version>
-  </properties>
-
 </project>
-
