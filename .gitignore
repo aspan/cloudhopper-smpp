@@ -6,5 +6,12 @@ target/
 .classpath
 .project
 .settings/
+
+*.iml
+.idea/
+*.ipr
+*.iws
+/out/
+.idea_modules/
 atlassian-ide-plugin.xml
 tests.log
