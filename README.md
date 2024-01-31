@@ -1,7 +1,7 @@
 Cloudhopper SMPP (forked from Twitter)
 ======================================
 
-[![Release](https://jitpack.io/v/aspan/cloudhopper-smpp.svg)](https://jitpack.io/#aspan/cloudhopper-smpp)
+[![Release](https://jitpack.io/v/biz.asplund/cloudhopper-smpp.svg)](https://jitpack.io/#biz.asplund/cloudhopper-smpp)
 
 News
 ------------------------
