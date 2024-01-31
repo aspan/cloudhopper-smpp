@@ -10,10 +10,12 @@ updates:
     schedule:
       interval: "daily"
       time: "00:00"
-      timezone: "Europe/Athens"
+      timezone: "Europe/Stockholm"
+    target-branch: "develop"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
       time: "00:00"
-      timezone: "Europe/Athens"
+      timezone: "Europe/Stockholm"
+    target-branch: "develop"
