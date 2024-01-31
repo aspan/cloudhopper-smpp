@@ -4,7 +4,7 @@
 	<groupId>biz.asplund</groupId>
 	<artifactId>cloudhopper-smpp</artifactId>
 	<packaging>jar</packaging>
-	<version>8.0.1-SNAPSHOT</version>
+	<version>8.0.1</version>
 	<name>cloudhopper-smpp</name>
 	<description>Efficient, scalable, and flexible Java implementation of the Short Messaging Peer to Peer Protocol (SMPP)</description>
 	<url>https://github.com/aspan/cloudhopper-smpp</url>
