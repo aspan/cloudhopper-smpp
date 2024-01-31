@@ -1,19 +1,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.github.cytechmobile</groupId>
+	<groupId>com.github.aspan</groupId>
 	<artifactId>cloudhopper-smpp</artifactId>
 	<packaging>jar</packaging>
-	<version>7.0.14</version>
+	<version>1.0-SNAPSHOT</version>
 	<name>cloudhopper-smpp</name>
 	<description>Efficient, scalable, and flexible Java implementation of the Short Messaging Peer to Peer Protocol (SMPP)</description>
-	<url>https://github.com/cytechmobile/cloudhopper-smpp</url>
+	<url>https://github.com/aspan/cloudhopper-smpp</url>
 	<inceptionYear>2009</inceptionYear>
 
 	<scm>
-		<url>https://github.com/cytechmobile/cloudhopper-smpp</url>
-		<connection>scm:git:https://github.com/cytechmobile/cloudhopper-smpp.git</connection>
-		<developerConnection>scm:git:git@github.com:cytechmobile/cloudhopper-smpp.git</developerConnection>
+		<url>https://github.com/aspan/cloudhopper-smpp</url>
+		<connection>scm:git:https://github.com/aspan/cloudhopper-smpp.git</connection>
+		<developerConnection>scm:git:git@github.com:aspan/cloudhopper-smpp.git</developerConnection>
 		<tag>main</tag>
 	</scm>
 
@@ -47,9 +47,9 @@
 			<artifactId>slf4j-api</artifactId>
 			<version>${slf4j.version}</version>
 		</dependency>
-		<dependency> <!-- TODO: select only the netty deps we need -->
+		<dependency>
 			<groupId>io.netty</groupId>
-			<artifactId>netty-all</artifactId>
+			<artifactId>netty-handler</artifactId>
 			<version>${netty.version}</version>
 		</dependency>
 		<!-- provided scope -->
